@@ -154,6 +154,10 @@ module Spree
       self.option_values.detect { |o| o.option_type.name == opt_name }.try(:presentation)
     end
 
+    def admin_label
+      self.product.name += " - " + self.option_values.map { |ov| ov.option_type.presentation + ov.presentation }.join(',')
+    end
+
     private
       # Ensures a new variant takes the product master price when price is not supplied
       def check_price
