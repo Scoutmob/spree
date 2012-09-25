@@ -67,7 +67,7 @@ format_product_autocomplete = function(item){
   }else{
     // variant
     var variant = item.data['variant'];
-    var name = variant['methods']
+    var name = variant['admin_label']
 
     if(variant['images'].length!=0){
       html = image_html(variant);
@@ -94,7 +94,7 @@ prep_product_autocomplete_data = function(data){
       //variants
       return $.map(product['variants'], function(variant){
 
-        var name = variant['methods']
+        var name = variant['admin_label']
 
         return {
             data: {product: product, variant: variant},
