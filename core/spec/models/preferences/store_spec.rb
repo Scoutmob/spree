@@ -3,6 +3,7 @@ require 'spec_helper'
 describe Spree::Preferences::Store do
   before :each do
     @store = Spree::Preferences::StoreInstance.new
+    @store.perform_caching = true
   end
 
   it "sets and gets a key" do
@@ -44,4 +45,28 @@ describe Spree::Preferences::Store do
     @store.get(:random_key).should be_nil
   end
 
+  describe "with caching disabled" do
+    before :each do
+      @store.perform_caching = false
+    end
+
+    it "sets and gets a key" do
+      @store.set :test, 1, :integer
+      @store.exist?(:test).should be_true
+      @store.get(:test).should eq 1
+    end
+
+    it "should not write values to cache" do
+      Rails.cache.clear
+      @store.set :test, 1, :integer
+      Rails.cache.read(:test).should be_nil
+    end
+
+    it "should not read values from cache" do
+      @store.set :test, 1, :integer
+      Rails.cache.clear
+      Rails.cache.write(:test, 2)
+      @store.get(:test).should eq 1
+    end
+  end
 end

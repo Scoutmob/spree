@@ -10,28 +10,34 @@ module Spree::Preferences
 
   class StoreInstance
     attr_accessor :persistence
+    attr_writer :perform_caching
 
     def initialize
       @cache = Rails.cache
       @persistence = true
+      @perform_caching = true
     end
 
     def set(key, value, type)
-      @cache.write(key, value)
+      if perform_caching?
+        @cache.write(key, value)
+      end
       persist(key, value, type)
     end
 
     def exist?(key)
-      @cache.exist?(key) ||
+      (perform_caching? && @cache.exist?(key)) ||
       should_persist? && Spree::Preference.where(:key => key).exists?
     end
 
     def get(key,fallback=nil)
-      # return the retrieved value, if it's in the cache
-      # use unless nil? incase the value is actually boolean false
-      #
-      unless (val = @cache.read(key)).nil?
-        return val
+      if perform_caching?
+        # return the retrieved value, if it's in the cache
+        # use unless nil? incase the value is actually boolean false
+        #
+        unless (val = @cache.read(key)).nil?
+          return val
+        end
       end
 
       if should_persist?
@@ -40,15 +46,17 @@ module Spree::Preferences
 
         # does it exist in the database?
         if Spree::Preference.table_exists? && preference = Spree::Preference.find_by_key(key)
-          # it does exist, so let's put it back into the cache
-          @cache.write(preference.key, preference.value)
+          if perform_caching?
+            # it does exist, so let's put it back into the cache
+            @cache.write(preference.key, preference.value)
+          end
 
           # and return the value
           return preference.value
         end
       end
 
-      unless fallback.nil?
+      if !fallback.nil? && perform_caching?
         # cache fallback so we won't hit the db above on
         # subsequent queries for the same key
         #
@@ -59,12 +67,16 @@ module Spree::Preferences
     end
 
     def delete(key)
-      @cache.delete(key)
+      if perform_caching?
+        @cache.delete(key)
+      end
       destroy(key)
     end
 
     def clear_cache
-      @cache.clear
+      if perform_caching?
+        @cache.clear
+      end
     end
 
     private
@@ -87,6 +99,10 @@ module Spree::Preferences
 
     def should_persist?
       @persistence and Spree::Preference.table_exists?
+    end
+
+    def perform_caching?
+      @perform_caching
     end
 
   end
